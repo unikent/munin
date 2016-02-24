@@ -2,7 +2,9 @@
 # -*- sh -*-
 #
 # Plugin to monitor the number of PHP-FPM processes on the machine.
-# Credit to TJ Stein 2010 http://constantshift.com
+#
+# Copyright TJ Stein 2010 http://constantshift.com
+# Modified by Skylar Kelty 2016
 #
 # Magic markers:
 #%# family=manual

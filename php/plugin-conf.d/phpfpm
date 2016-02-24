@@ -2,4 +2,4 @@
     env.host 127.0.0.1
     env.port 82
     env.phpbin php-fpm
-    env.phppool w3moodle
+    env.phppool moodle.kent.ac.uk

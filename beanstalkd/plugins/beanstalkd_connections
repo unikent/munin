@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Plugin to monitor the number of tasks over time in beanstalkd.
+# Plugin to monitor the number of connections to beanstalkd.
 #
 # Magic markers:
 #%# family=manual
@@ -33,18 +33,18 @@ def do_data():
     yaml = yaml.split('\n')
     for stat in yaml:
         stat = stat.split(': ')
-        if stat[0] == 'total-jobs':
-            print('queue_jobs.value %s' % stat[1])
+        if stat[0] == 'current-connections':
+            print('connections.value %s' % stat[1])
 
 def do_config():
-    print("graph_title Job Rate")
-    print("graph_vlabel Jobs per ${graph_period}")
+    print("graph_title Open connections")
+    print("graph_vlabel Connections")
     print("graph_category Beanstalk")
     print("graph_args --lower-limit 0")
     print("graph_scale no")
-    print("queue_jobs.label Jobs")
-    print("queue_jobs.type DERIVE")
-    print("queue_jobs.min 0")
+    print("connections.label Connections")
+    print("connections.type GAUGE")
+    print("connections.min 0")
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'config':

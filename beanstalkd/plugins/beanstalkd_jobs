@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+#
+# Plugin to monitor the number of tasks over time in beanstalkd.
+#
+# Magic markers:
+#%# family=manual
+#%# capabilities=autoconf
+
+import os
+import sys
+import socket
+
+HOST = os.environ.get('HOST', 'localhost')
+PORT = os.environ.get('PORT', 11300)
+
+def do_data():
+    beanstalk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    beanstalk.connect((HOST, PORT))
+    socket_file = beanstalk.makefile('rb')
+
+    beanstalk.sendall('stats\r\n')
+
+    line = socket_file.readline()
+    response = line.split()
+    yaml = socket_file.read(int(response[1]))
+    socket_file.read(2)
+
+    beanstalk.sendall('quit\r\n')
+    beanstalk.close()
+
+    # Okay! We have a bunch of YAML..
+    stats = {}
+    yaml = yaml.split('\n')
+    for stat in yaml:
+        stat = stat.split(': ')
+        if stat[0] == 'total-jobs':
+            print 'queue_jobs.value %s' % stat[1]
+
+def do_config():
+    print("graph_title Job Rate")
+    print("graph_vlabel Jobs per ${graph_period}")
+    print("graph_category Beanstalk")
+    print("graph_args --lower-limit 0")
+    print("graph_scale no")
+    print("queue_jobs.label Jobs")
+    print("queue_jobs.type DERIVE")
+    print("queue_jobs.min 0")
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == 'config':
+        do_config()
+    else:
+        do_data()

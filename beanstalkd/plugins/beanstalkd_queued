@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+#
+# Plugin to monitor the number of tasks in beanstalkd.
+#
+# Magic markers:
+#%# family=manual
+#%# capabilities=autoconf
+
+import os
+import sys
+import socket
+
+HOST = os.environ.get('HOST', 'localhost')
+PORT = os.environ.get('PORT', 11300)
+
+jobs = [ ['ready', 'current-jobs-ready', 'Ready'],
+         ['urgent', 'current-jobs-urgent', 'Urgent'],
+         ['reserved', 'current-jobs-reserved', 'Reserved'],
+         ['delayed', 'current-jobs-delayed', 'Delayed'],
+         ['buried', 'current-jobs-buried', 'Buried'] ]
+job_api_keys = [y for (x,y,z) in jobs]
+
+def do_data():
+    beanstalk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    beanstalk.connect((HOST, PORT))
+    socket_file = beanstalk.makefile('rb')
+
+    beanstalk.sendall('stats\r\n')
+
+    line = socket_file.readline()
+    response = line.split()
+    yaml = socket_file.read(int(response[1]))
+    socket_file.read(2)
+
+    beanstalk.sendall('quit\r\n')
+    beanstalk.close()
+
+    # Okay! We have a bunch of YAML..
+    stats = {}
+    yaml = yaml.split('\n')
+    for stat in yaml:
+        stat = stat.split(': ')
+        if len(stat) == 2:
+            stats[stat[0]] = stat[1]
+
+    for j in jobs:
+        print('%s.value %s' % (j[0], stats[j[1]]))
+
+def do_config():
+    print("graph_title Queue Size")
+    print("graph_vlabel Number of jobs in the queue")
+    print("graph_category Beanstalk")
+    print("graph_args --lower-limit 0")
+    print("graph_scale no")
+    for j in jobs:
+        print('%s.label %s' % (j[0], j[2]))
+        print('%s.type GAUGE' % j[0])
+        print('%s.min 0' % j[0])
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == 'config':
+        do_config()
+    else:
+        do_data()

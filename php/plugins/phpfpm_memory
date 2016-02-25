@@ -27,10 +27,24 @@ if ( defined $ARGV[0] and $ARGV[0] eq "config" ) {
 	exit 0;
 }
 
+my %masters = ();
 my $i = Integer;
-@cmd = `ps auwx | grep "$PHP_BIN: pool $PHP_POOL" | grep -v grep | grep -v phpfpm_memory`;
+
+@cmd = `ps axwww -o pid,ppid,vsz,command | grep "$PHP_BIN: master process" | grep -v grep | grep -v phpfpm_memory`;
 foreach (@cmd) {
     @return = split(/ +/, $_);
-    $i += @return[5]*1024;
+    $masters{@return[0]} = @return[2] * 1024;
 }
+
+@cmd = `ps axwww -o pid,ppid,vsz,command | grep "$PHP_BIN: pool $PHP_POOL" | grep -v grep | grep -v phpfpm_memory`;
+foreach (@cmd) {
+    @return = split(/ +/, $_);
+
+    if ($i == 0) {
+	$i += $masters{$return[1]};
+    }
+
+    $i += (@return[2] * 1024) - $masters{$return[1]};
+}
+
 print "ram.value ".$i."\n";
